@@ -19,17 +19,17 @@
         <dependency>
             <groupId>hoatv</groupId>
             <artifactId>task-management</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>hoatv</groupId>
             <artifactId>metric-management</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>hoatv</groupId>
             <artifactId>base-executor</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
