@@ -84,6 +84,14 @@ public class Product {
     @JsonProperty("add_on")
     private List<AddOn> addOns;
     private PriceComparison price_comparison;
+    private QuantitySold quantity_sold;
+    private String inventory_type;
+
+    @Getter
+    public static class QuantitySold {
+        public String text;
+        public int value;
+    }
 
     @Getter
     public static class PriceComparison{

@@ -13,6 +13,7 @@
 
     <properties>
         <application.startup.class>com.hoatv.Application</application.startup.class>
+        <docker.image.name>e-commerce</docker.image.name>
     </properties>
 
     <dependencies>
@@ -50,21 +51,6 @@
             <plugin>
                 <groupId>com.spotify</groupId>
                 <artifactId>docker-maven-plugin</artifactId>
-                <configuration>
-                    <imageName>e-commerce</imageName>
-                    <baseImage>openjdk:11-jre-slim</baseImage>
-                    <entryPoint>["java", "-jar", "/${project.build.finalName}.jar"]</entryPoint>
-                    <resources>
-                        <resource>
-                            <targetPath>/</targetPath>
-                            <directory>${project.build.directory}</directory>
-                            <include>${project.build.finalName}.jar</include>
-                        </resource>
-                    </resources>
-                    <imageTags>
-                        <imageTag>${project.version}</imageTag>
-                    </imageTags>
-                </configuration>
             </plugin>
         </plugins>
     </build>
