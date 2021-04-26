@@ -13,7 +13,6 @@
 
     <properties>
         <application.startup.class>com.hoatv.Application</application.startup.class>
-        <docker.image.name>e-commerce</docker.image.name>
     </properties>
 
     <dependencies>
