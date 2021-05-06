@@ -250,7 +250,7 @@ public class Product {
     public static class ConfigurableOption{
         public String code;
         public String name;
-        @JsonProperty("is_gallery")
+        @JsonProperty("show_preview_image")
         public boolean isShowPreviewImage;
         public int position;
         public List<Value> values;
