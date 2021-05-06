@@ -89,14 +89,14 @@ public class Product {
 
     @Getter
     public static class QuantitySold {
-        public String text;
-        public int value;
+        private String text;
+        private int value;
     }
 
     @Getter
     public static class PriceComparison{
-        public String title;
-        public String sub_title;
+        private String title;
+        private String sub_title;
     }
 
     @Getter
@@ -248,12 +248,18 @@ public class Product {
 
     @Getter
     public static class ConfigurableOption{
-        public String code;
-        public String name;
+        private String code;
+        private String name;
         @JsonProperty("show_preview_image")
-        public boolean isShowPreviewImage;
-        public int position;
-        public List<Value> values;
+        private boolean isShowPreviewImage;
+        private int position;
+        private List<Value> values;
+    }
+
+    @Getter
+    public static class Seller{
+        private String name;
+        private int id;
     }
 
     @Getter
@@ -268,11 +274,13 @@ public class Product {
         private boolean selected;
         private String inventory_status;
         private int id;
+        private int v5;
         private String option1;
         private String option2;
         private String option3;
         private String option4;
         private String option5;
         private String option6;
+        private Seller seller;
     }
 }
