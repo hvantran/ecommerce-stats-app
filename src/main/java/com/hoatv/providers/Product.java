@@ -248,10 +248,12 @@ public class Product {
 
     @Getter
     public static class ConfigurableOption{
-        private String code;
-        private String name;
-        private int position;
-        private List<Value> values;
+        public String code;
+        public String name;
+        @JsonProperty("is_gallery")
+        public boolean isShowPreviewImage;
+        public int position;
+        public List<Value> values;
     }
 
     @Getter
