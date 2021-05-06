@@ -3,9 +3,11 @@ package com.hoatv.providers;
 import com.hoatv.fwk.common.services.GenericHttpClientPool;
 import com.hoatv.fwk.common.services.GenericHttpClientPool.ExecutionTemplate;
 import com.hoatv.fwk.common.services.HttpClientService;
+import com.hoatv.fwk.common.ultilities.ObjectUtils;
 import com.hoatv.fwk.common.ultilities.Pair;
 import com.hoatv.metric.mgmt.annotations.Metric;
 import com.hoatv.metric.mgmt.annotations.MetricProvider;
+import com.hoatv.metric.mgmt.api.ExternalMetricProvider;
 import com.hoatv.metric.mgmt.entities.ComplexValue;
 import com.hoatv.metric.mgmt.entities.MetricTag;
 import com.hoatv.metric.mgmt.services.MetricService;
@@ -17,21 +19,25 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.net.http.HttpClient;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+@Component
 @ScheduleApplication(application = Tiki.APPLICATION_NAME, period = Tiki.PERIOD_TIME_IN_MILLIS)
 @SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = 30))
 @MetricProvider(application = Tiki.APPLICATION_NAME, category = "e-commerce")
-public class Tiki {
+public class Tiki implements ExternalMetricProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Tiki.class);
 
-    protected static final String APPLICATION_NAME = "Tiki";
-    protected static final long PERIOD_TIME_IN_MILLIS = 5 * 60 * 1000;
+    public static final String APPLICATION_NAME = "Tiki";
+    protected static final long PERIOD_TIME_IN_MILLIS = 1 * 60 * 1000;
 
     private static final int MAX_RETRY_TIMES = 10;
     private static final String BASE_URL = "https://tiki.vn";
@@ -52,6 +58,7 @@ public class Tiki {
     private final MetricService metricService = new MetricService();
     private final HttpClientService httpClientService = HttpClientService.INSTANCE;
     private final GenericHttpClientPool httpClientPool = new GenericHttpClientPool(30, 2000);
+    private final Map<String, Long> additionalProductMap = new ConcurrentHashMap<>();
 
     private static final BiFunction<Integer, Promotion.Datum, Integer> REDUCE_PRICE_FUNCTION = (price, data) -> {
         String simpleAction = data.getSimple_action();
@@ -60,6 +67,25 @@ public class Tiki {
         }
         return price - data.getDiscount_amount();
     };
+
+    public void addAdditionalProduct(String productName, Long id) {
+        Long productId = additionalProductMap.putIfAbsent(productName, id);
+        ObjectUtils.checkThenThrow(Objects::nonNull, productId, "Product "+ productId + " is already monitor");
+    }
+
+
+    @ScheduleTask(name = "COLLECTING_ADDITIONAL_PRODUCTS")
+    public void processMetrics() {
+        if (additionalProductMap.size() == 0) {
+            return;
+        }
+
+        BiConsumer<String, Long> consumer = (productName, productId) -> {
+            Collection<MetricTag> productPrice = getProductPrice(productId);
+            metricService.setMetric(productName, productPrice);
+        };
+        additionalProductMap.forEach(consumer);
+    }
 
     @ScheduleTask(name = SAMSUNG_QLED_55_INCHES)
     public void getQLED55InchesPriceScheduleTask() {
@@ -95,6 +121,22 @@ public class Tiki {
     public void get4K55Inches2PriceScheduleTask() {
         Collection<MetricTag> productPrice = getProductPrice(50702927L);
         metricService.setMetric(SAMSUNG_4K_55_INCHES_2, productPrice);
+    }
+
+    @Override
+    @Metric(name = "External")
+    public List<ComplexValue> getExternalMetricValues() {
+        return additionalProductMap.entrySet().stream().map(p -> {
+            ComplexValue metric = metricService.getMetric(p.getKey());
+            if (metric == null) {
+                return null;
+            }
+
+            MetricTag metricTag = metric.getTags().stream().findFirst().orElseThrow();
+            metricTag.getAttributes().putIfAbsent("name", p.getKey());
+            return metric;
+        }).filter(Objects::nonNull)
+        .collect(Collectors.toList());
     }
 
     @Metric(name = SAMSUNG_QLED_55_INCHES, unit = "VND")
