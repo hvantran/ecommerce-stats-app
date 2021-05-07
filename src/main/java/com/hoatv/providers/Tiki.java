@@ -62,6 +62,11 @@ public class Tiki implements ExternalMetricProvider {
 
     private static final BiFunction<Integer, Promotion.Datum, Integer> REDUCE_PRICE_FUNCTION = (price, data) -> {
         String simpleAction = data.getSimple_action();
+
+        if (CollectionUtils.isNotEmpty(data.getTags())) {
+            return price;
+        }
+
         if (simpleAction.equals(COUPON_BY_PERCENT)) {
             return price - (price * data.getDiscount_amount() / 100);
         }
@@ -270,8 +275,7 @@ public class Tiki implements ExternalMetricProvider {
 
     private long getMinPrice(HttpClient httpClient, Integer price, int productId) {
         String disCountURL = API_URL.concat(String.format(COUPON_DETAIL, productId));
-        Promotion promotion = httpClientService.sendGETRequest(httpClient, disCountURL, Promotion.class,
-                MAX_RETRY_TIMES);
+        Promotion promotion = httpClientService.sendGETRequest(httpClient, disCountURL, Promotion.class, MAX_RETRY_TIMES);
         if (CollectionUtils.isEmpty(promotion.getData())) {
             return price;
         }
