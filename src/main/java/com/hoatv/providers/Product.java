@@ -1,5 +1,6 @@
 package com.hoatv.providers;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Product {
 
     private int id;
@@ -49,7 +51,6 @@ public class Product {
     private String salable_type;
     private int data_version;
     private int day_ago_created;
-    private Categories categories;
     private Object meta_title;
     private Object meta_description;
     private Object meta_keywords;
@@ -58,7 +59,6 @@ public class Product {
     private String description;
     private Object return_policy;
     private Object warranty_policy;
-    private List<CustomAttribute> custom_attributes;
     private Brand brand;
     private List<SellerSpecification> seller_specifications;
     private CurrentSeller current_seller;
@@ -69,7 +69,6 @@ public class Product {
     private List<Object> product_links;
     private List<Object> services_and_promotions;
     private List<Object> promotions;
-    private List<Image> images;
     private List<Rank> ranks;
     private List<Breadcrumb> breadcrumbs;
     private List<String> top_features;
@@ -88,23 +87,27 @@ public class Product {
     private String inventory_type;
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class QuantitySold {
         private String text;
         private int value;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class PriceComparison{
         private String title;
         private String sub_title;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Error {
         private String message;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AddOn{
         private int id;
         private String name;
@@ -122,6 +125,7 @@ public class Product {
 
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Badge{
         private String code;
         private int price;
@@ -130,12 +134,14 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Inventory{
         private Object product_virtual_type;
         private String fulfillment_type;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class StockItem{
         private int qty;
         private int min_sale_qty;
@@ -144,21 +150,7 @@ public class Product {
     }
 
     @Getter
-    public static class Categories{
-        private int id;
-        private String name;
-        @JsonProperty("is_leaf")
-        private boolean isLeaf;
-    }
-
-    @Getter
-    public static class CustomAttribute{
-        private String attribute;
-        private String display_name;
-        private String value;
-    }
-
-    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Brand{
         private int id;
         private String name;
@@ -166,6 +158,7 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class SellerSpecification{
         private String name;
         private Object value;
@@ -173,6 +166,7 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class CurrentSeller{
         private int id;
         private String sku;
@@ -189,6 +183,7 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class OtherSeller{
         private int id;
         private String name;
@@ -200,31 +195,21 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Attribute{
         private String name;
         private Object value;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Specification{
         private String name;
         private List<Attribute> attributes;
     }
 
     @Getter
-    public static class Image{
-        private Object label;
-        private Object position;
-        private String base_url;
-        private String thumbnail_url;
-        private String small_url;
-        private String medium_url;
-        private String large_url;
-        @JsonProperty("is_gallery")
-        private boolean isGallery;
-    }
-
-    @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Rank{
         private String type;
         private String period;
@@ -235,6 +220,7 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Breadcrumb{
         private String url;
         private String name;
@@ -242,11 +228,13 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Value{
         private String label;
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ConfigurableOption{
         private String code;
         private String name;
@@ -257,6 +245,7 @@ public class Product {
     }
 
     @Getter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Seller{
         private String name;
         private int id;
@@ -264,13 +253,13 @@ public class Product {
 
     @Getter
     @FieldNameConstants
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ConfigurableProduct{
         private int child_id;
         private String sku;
         private String name;
         private int price;
         private String thumbnail_url;
-        private List<Image> images;
         private boolean selected;
         private String inventory_status;
         private int id;
