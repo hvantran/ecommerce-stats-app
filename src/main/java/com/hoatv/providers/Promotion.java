@@ -1,5 +1,6 @@
 package com.hoatv.providers;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -7,15 +8,18 @@ import java.util.List;
 
 @Getter
 @Setter
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Promotion {
     private String text;
     private List<String> labels;
     private List<Datum> data;
     private String log;
     private String message;
+    private String version;
 
     @Getter
     @Setter
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Datum{
         private String icon_name;
         private Object seller_name;

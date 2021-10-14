@@ -37,7 +37,7 @@ public class Tiki implements ExternalMetricProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(Tiki.class);
 
     public static final String APPLICATION_NAME = "Tiki";
-    protected static final long PERIOD_TIME_IN_MILLIS = 1 * 60 * 1000;
+    protected static final long PERIOD_TIME_IN_MILLIS = 60 * 1000;
 
     private static final int MAX_RETRY_TIMES = 10;
     private static final String BASE_URL = "https://tiki.vn";
@@ -48,17 +48,10 @@ public class Tiki implements ExternalMetricProvider {
     private static final String COUPON_DETAIL = "/shopping/v2/promotion/rules?pid=%s&seller_id=1";
     protected static final String COUPON_BY_PERCENT = "by_percent";
 
-    private static final String SAMSUNG_QLED_50_INCHES =  APPLICATION_NAME + " Samsung QLED 50 INCHES";
-    private static final String SAMSUNG_4K_50_INCHES_1 =  APPLICATION_NAME + " Samsung 4K 50 INCHES-UA50TU7000";
-    private static final String SAMSUNG_4K_50_INCHES_2 =  APPLICATION_NAME + " Samsung 4K 50 INCHES-UA50RU7200";
-    private static final String SAMSUNG_QLED_55_INCHES =  APPLICATION_NAME + " Samsung QLED 55 INCHES";
-    private static final String SAMSUNG_4K_55_INCHES_1 =  APPLICATION_NAME + " Samsung 4K 55 INCHES-UA55TU8500";
-    private static final String SAMSUNG_4K_55_INCHES_2 =  APPLICATION_NAME + " Samsung 4K 55 INCHES-UA55TU8100";
-
     private final MetricService metricService = new MetricService();
     private final HttpClientService httpClientService = HttpClientService.INSTANCE;
     private final GenericHttpClientPool httpClientPool = new GenericHttpClientPool(30, 2000);
-    private final Map<String, Long> additionalProductMap = new ConcurrentHashMap<>();
+    private final Map<Long, EMonitorVO> additionalProductMap = new ConcurrentHashMap<>();
 
     private static final BiFunction<Integer, Promotion.Datum, Integer> REDUCE_PRICE_FUNCTION = (price, data) -> {
         String simpleAction = data.getSimple_action();
@@ -73,11 +66,10 @@ public class Tiki implements ExternalMetricProvider {
         return price - data.getDiscount_amount();
     };
 
-    public void addAdditionalProduct(String productName, Long id) {
-        Long productId = additionalProductMap.putIfAbsent(productName, id);
+    public void addAdditionalProduct(EMonitorVO product) {
+        EMonitorVO productId = additionalProductMap.putIfAbsent(product.getMasterId(), product);
         ObjectUtils.checkThenThrow(Objects::nonNull, productId, "Product "+ productId + " is already monitor");
     }
-
 
     @ScheduleTask(name = "COLLECTING_ADDITIONAL_PRODUCTS")
     public void processMetrics() {
@@ -85,93 +77,30 @@ public class Tiki implements ExternalMetricProvider {
             return;
         }
 
-        BiConsumer<String, Long> consumer = (productName, productId) -> {
+        BiConsumer<Long, EMonitorVO> consumer = (productId, productMonitor) -> {
             Collection<MetricTag> productPrice = getProductPrice(productId);
-            metricService.setMetric(productName, productPrice);
+            if (StringUtils.isNotEmpty(productMonitor.getSubCategory())) {
+                productPrice.forEach(metricTag -> metricTag.getAttributes().put("sub_category", productMonitor.getSubCategory()));
+            }
+            metricService.setMetric(productMonitor.getProductName(), productPrice);
         };
         additionalProductMap.forEach(consumer);
-    }
-
-    @ScheduleTask(name = SAMSUNG_QLED_55_INCHES)
-    public void getQLED55InchesPriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(50702925L);
-        metricService.setMetric(SAMSUNG_QLED_55_INCHES, productPrice);
-    }
-
-    @ScheduleTask(name = SAMSUNG_QLED_50_INCHES)
-    public void getQLED50InchesPriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(50421565L);
-        metricService.setMetric(SAMSUNG_QLED_50_INCHES, productPrice);
-    }
-
-    @ScheduleTask(name = SAMSUNG_4K_50_INCHES_1)
-    public void get4K50InchesPriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(50421559L);
-        metricService.setMetric(SAMSUNG_4K_50_INCHES_1, productPrice);
-    }
-
-    @ScheduleTask(name = SAMSUNG_4K_50_INCHES_2)
-    public void get4K50Inches2PriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(11656299L);
-        metricService.setMetric(SAMSUNG_4K_50_INCHES_2, productPrice);
-    }
-
-    @ScheduleTask(name = SAMSUNG_4K_55_INCHES_1)
-    public void get4K55Inches1PriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(50702921L);
-        metricService.setMetric(SAMSUNG_4K_55_INCHES_1, productPrice);
-    }
-
-    @ScheduleTask(name = SAMSUNG_4K_55_INCHES_2)
-    public void get4K55Inches2PriceScheduleTask() {
-        Collection<MetricTag> productPrice = getProductPrice(50702927L);
-        metricService.setMetric(SAMSUNG_4K_55_INCHES_2, productPrice);
     }
 
     @Override
     @Metric(name = "External")
     public List<ComplexValue> getExternalMetricValues() {
-        return additionalProductMap.entrySet().stream().map(p -> {
-            ComplexValue metric = metricService.getMetric(p.getKey());
+        return additionalProductMap.values().stream().map(eMonitorVO -> {
+            ComplexValue metric = metricService.getMetric(eMonitorVO.getProductName());
             if (metric == null) {
                 return null;
             }
 
             MetricTag metricTag = metric.getTags().stream().findFirst().orElseThrow();
-            metricTag.getAttributes().putIfAbsent("name", p.getKey());
+            metricTag.getAttributes().putIfAbsent("name", eMonitorVO.getProductName());
             return metric;
         }).filter(Objects::nonNull)
         .collect(Collectors.toList());
-    }
-
-    @Metric(name = SAMSUNG_QLED_55_INCHES, unit = "VND")
-    public ComplexValue getQLED55InchesPrice() {
-        return metricService.getMetric(SAMSUNG_QLED_55_INCHES);
-    }
-
-    @Metric(name = SAMSUNG_QLED_50_INCHES, unit = "VND")
-    public ComplexValue getQLED50InchesPrice() {
-        return metricService.getMetric(SAMSUNG_QLED_50_INCHES);
-    }
-
-    @Metric(name = SAMSUNG_4K_50_INCHES_1, unit = "VND")
-    public ComplexValue get4K50InchesPrice() {
-        return metricService.getMetric(SAMSUNG_4K_50_INCHES_1);
-    }
-
-    @Metric(name = SAMSUNG_4K_50_INCHES_2, unit = "VND")
-    public ComplexValue get4K50Inches2Price() {
-        return metricService.getMetric(SAMSUNG_4K_50_INCHES_2);
-    }
-
-    @Metric(name = SAMSUNG_4K_55_INCHES_1, unit = "VND")
-    public ComplexValue get4K55Inches1Price() {
-        return metricService.getMetric(SAMSUNG_4K_55_INCHES_1);
-    }
-
-    @Metric(name = SAMSUNG_4K_55_INCHES_2, unit = "VND")
-    public ComplexValue get4K55Inches2Price() {
-        return metricService.getMetric(SAMSUNG_4K_55_INCHES_2);
     }
 
     private Collection<MetricTag> getProductPrice(Long masterId) {
@@ -264,7 +193,7 @@ public class Tiki implements ExternalMetricProvider {
 
         if (CollectionUtils.isNotEmpty(allListPrice)) {
             Optional<Long> min = allListPrice.stream().min(Long::compareTo);
-            return List.of(new MetricTag(min.get().toString()));
+            return List.of(new MetricTag(min.orElse(0L).toString()));
         }
 
         Map<String, MetricTag> metricTagMap = allMetricTagList.stream()
