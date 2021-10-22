@@ -4,8 +4,12 @@ import com.hoatv.fwk.common.ultilities.ObjectUtils;
 import com.hoatv.metric.common.providers.MetricProviderRegistry;
 import com.hoatv.metric.mgmt.annotations.MetricProvider;
 import com.hoatv.metric.mgmt.annotations.MetricRegistry;
+import com.hoatv.providers.Tiki;
+import com.hoatv.repositories.ProductRepository;
+import com.hoatv.services.ProductService;
 import com.hoatv.task.mgmt.annotations.SchedulePoolSettings;
 import com.hoatv.task.mgmt.entities.TaskCollection;
+import com.hoatv.task.schedule.executors.ScheduleTaskExecutorService;
 import com.hoatv.task.schedule.executors.ScheduleTaskMgmtExecutorV1;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -22,6 +26,16 @@ public class Application {
 
     public static void main(String[] args) {
         SpringApplication.run(Application.class, args);
+    }
+
+    @Bean(destroyMethod = "destroy")
+    public ScheduleTaskExecutorService getScheduleTaskExecutorService() {
+        return new ScheduleTaskExecutorService();
+    }
+
+    @Bean
+    public ProductService getTikiProductService(ProductRepository productRepository, Tiki tiki){
+        return new ProductService(productRepository, tiki);
     }
 
     @Bean
@@ -41,13 +55,19 @@ public class Application {
             MetricProviderRegistry metricProviderRegistry = (MetricProviderRegistry) metricRegistry;
             metricProviderRegistry.loadFromObjects(metricProviders);
 
-            poolSettings.stream().forEach(applicationObj -> {
-                SchedulePoolSettings annotation = applicationObj.getClass().getAnnotation(SchedulePoolSettings.class);
-                ScheduleTaskMgmtExecutorV1 taskMgmtExecutorV1 = new ScheduleTaskMgmtExecutorV1(annotation);
+            ScheduleTaskExecutorService scheduleTaskExecutorService = ctx.getBean(ScheduleTaskExecutorService.class);
 
+            poolSettings.stream().forEach(applicationObj -> {
+                SchedulePoolSettings schedulePoolSettings = applicationObj.getClass().getAnnotation(SchedulePoolSettings.class);
+                ScheduleTaskMgmtExecutorV1 taskMgmtExecutorV1 = new ScheduleTaskMgmtExecutorV1(schedulePoolSettings);
+
+                scheduleTaskExecutorService.register(schedulePoolSettings.application(), taskMgmtExecutorV1);
                 TaskCollection taskCollection = TaskCollection.fromObject(applicationObj);
                 taskMgmtExecutorV1.execute(taskCollection);
             });
+
+            ProductService productService = ctx.getBean(ProductService.class);
+            productService.init();
         };
     }
 }

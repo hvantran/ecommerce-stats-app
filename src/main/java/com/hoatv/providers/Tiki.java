@@ -1,5 +1,7 @@
 package com.hoatv.providers;
 
+import com.hoatv.fwk.common.services.BiCheckedFunction;
+import com.hoatv.fwk.common.services.CheckedSupplier;
 import com.hoatv.fwk.common.services.GenericHttpClientPool;
 import com.hoatv.fwk.common.services.GenericHttpClientPool.ExecutionTemplate;
 import com.hoatv.fwk.common.services.HttpClientService;
@@ -13,31 +15,33 @@ import com.hoatv.metric.mgmt.entities.MetricTag;
 import com.hoatv.metric.mgmt.services.MetricService;
 import com.hoatv.task.mgmt.annotations.ScheduleApplication;
 import com.hoatv.task.mgmt.annotations.SchedulePoolSettings;
-import com.hoatv.task.mgmt.annotations.ScheduleTask;
 import com.hoatv.task.mgmt.annotations.ThreadPoolSettings;
+import com.hoatv.task.mgmt.entities.TaskEntry;
+import com.hoatv.task.schedule.executors.ScheduleTaskExecutorService;
+import com.hoatv.task.schedule.executors.ScheduleTaskMgmtExecutorV1;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Method;
 import java.net.http.HttpClient;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 @Component
 @ScheduleApplication(application = Tiki.APPLICATION_NAME, period = Tiki.PERIOD_TIME_IN_MILLIS)
-@SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = 30))
+@SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = Tiki.MAXIMUM_NUMBER_OF_PRODUCTS))
 @MetricProvider(application = Tiki.APPLICATION_NAME, category = "e-commerce")
 public class Tiki implements ExternalMetricProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Tiki.class);
 
     public static final String APPLICATION_NAME = "Tiki";
-    protected static final long PERIOD_TIME_IN_MILLIS = 60 * 1000;
+    protected static final long PERIOD_TIME_IN_MILLIS = 60000;
 
     private static final int MAX_RETRY_TIMES = 10;
     private static final String BASE_URL = "https://tiki.vn";
@@ -47,11 +51,17 @@ public class Tiki implements ExternalMetricProvider {
     private static final String PRODUCT_DETAIL_2 = "/api/v2/products/%s?platform=web&spid=%s&include=tag,images,gallery,promotions,badges,stock_item,variants,product_links,discount_tag,ranks,breadcrumbs,top_features,cta_desktop";
     private static final String COUPON_DETAIL = "/shopping/v2/promotion/rules?pid=%s&seller_id=1";
     protected static final String COUPON_BY_PERCENT = "by_percent";
+    protected static final int MAXIMUM_NUMBER_OF_PRODUCTS = 30;
 
     private final MetricService metricService = new MetricService();
     private final HttpClientService httpClientService = HttpClientService.INSTANCE;
     private final GenericHttpClientPool httpClientPool = new GenericHttpClientPool(30, 2000);
     private final Map<Long, EMonitorVO> additionalProductMap = new ConcurrentHashMap<>();
+    private final ScheduleTaskExecutorService scheduleTaskExecutorService;
+
+    public Tiki(ScheduleTaskExecutorService scheduleTaskExecutorService) {
+        this.scheduleTaskExecutorService = scheduleTaskExecutorService;
+    }
 
     private static final BiFunction<Integer, Promotion.Datum, Integer> REDUCE_PRICE_FUNCTION = (price, data) -> {
         String simpleAction = data.getSimple_action();
@@ -67,24 +77,24 @@ public class Tiki implements ExternalMetricProvider {
     };
 
     public void addAdditionalProduct(EMonitorVO product) {
+        ScheduleTaskMgmtExecutorV1 scheduleExecutor = scheduleTaskExecutorService.getScheduleExecutor(APPLICATION_NAME);
+        Objects.requireNonNull(scheduleExecutor);
+
+        String taskName = "product-price" + product.getProductName();
+        BiCheckedFunction<Object, Method, TaskEntry> taskEntryFunc = TaskEntry.fromMethodWithParams(taskName, -1, -1, product.getMasterId(), product);
+        CheckedSupplier<Method> collectPrice = () -> Tiki.class.getMethod("collectPrice", Long.class, EMonitorVO.class);
+        TaskEntry taskEntry = taskEntryFunc.apply(this, collectPrice.get());
+        scheduleExecutor.getScheduleTaskMgmtService().scheduleFixedRateTask(taskEntry);
         EMonitorVO productId = additionalProductMap.putIfAbsent(product.getMasterId(), product);
         ObjectUtils.checkThenThrow(Objects::nonNull, productId, "Product "+ productId + " is already monitor");
     }
 
-    @ScheduleTask(name = "COLLECTING_ADDITIONAL_PRODUCTS")
-    public void processMetrics() {
-        if (additionalProductMap.size() == 0) {
-            return;
+    public void collectPrice(Long productId, EMonitorVO productMonitor) {
+        Collection<MetricTag> productPrice = getProductPrice(productId);
+        if (StringUtils.isNotEmpty(productMonitor.getSubCategory())) {
+            productPrice.forEach(metricTag -> metricTag.getAttributes().put("sub_category", productMonitor.getSubCategory()));
         }
-
-        BiConsumer<Long, EMonitorVO> consumer = (productId, productMonitor) -> {
-            Collection<MetricTag> productPrice = getProductPrice(productId);
-            if (StringUtils.isNotEmpty(productMonitor.getSubCategory())) {
-                productPrice.forEach(metricTag -> metricTag.getAttributes().put("sub_category", productMonitor.getSubCategory()));
-            }
-            metricService.setMetric(productMonitor.getProductName(), productPrice);
-        };
-        additionalProductMap.forEach(consumer);
+        metricService.setMetric(productMonitor.getProductName(), productPrice);
     }
 
     @Override
@@ -96,8 +106,7 @@ public class Tiki implements ExternalMetricProvider {
                 return null;
             }
 
-            MetricTag metricTag = metric.getTags().stream().findFirst().orElseThrow();
-            metricTag.getAttributes().putIfAbsent("name", eMonitorVO.getProductName());
+            metric.getTags().forEach(tag -> tag.getAttributes().putIfAbsent("name", eMonitorVO.getProductName()));
             return metric;
         }).filter(Objects::nonNull)
         .collect(Collectors.toList());
@@ -107,8 +116,11 @@ public class Tiki implements ExternalMetricProvider {
         String productDetailURL = BASE_URL.concat(String.format(PRODUCT_DETAIL, masterId));
 
         ExecutionTemplate<Collection<MetricTag>> executionTemplate = httpClient -> {
-            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class,
-                    MAX_RETRY_TIMES);
+            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class, MAX_RETRY_TIMES);
+            if (Objects.isNull(product) || Objects.isNull(product.getCurrent_seller())) {
+                LOGGER.warn("Product isn't sell any more: {}", masterId);
+                return Collections.emptyList();
+            }
             List<Pair<String, Integer>> sellers = getProductIdList(product);
             Collection<MetricTag> minPrices = getMinPriceFromAllSuppliers(masterId, httpClient, sellers);
             LOGGER.info("Got min price {} for product {}", minPrices, product.getName());
@@ -121,11 +133,6 @@ public class Tiki implements ExternalMetricProvider {
     private List<Pair<String, Integer>> getProductIdList(Product product) {
         List<Pair<String, Integer>> productIdList = new ArrayList<>();
         int productId = product.getId();
-
-        if (Objects.isNull(product.getCurrent_seller())) {
-            LOGGER.warn("Product isn't sell any more: {}", product.getName());
-            return productIdList;
-        }
 
         if (Objects.nonNull(product.getTala_request_id())) {
             LOGGER.error("An exception occurred, the detail error message - {}", product.getError().getMessage());
@@ -149,17 +156,16 @@ public class Tiki implements ExternalMetricProvider {
             Integer sellerProductId = seller.getValue();
 
             String productDetailURL = BASE_URL.concat(String.format(PRODUCT_DETAIL_2, masterId, sellerProductId));
-            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class,
-                    MAX_RETRY_TIMES);
+            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class, MAX_RETRY_TIMES);
+            if (product == null) {
+                LOGGER.warn("Product isn't sell any more: {}", masterId);
+                continue;
+            }
 
             if (Objects.nonNull(product.getTala_request_id())) {
                 LOGGER.warn("An exception occurred, the detail error message - {}", product.getError().getMessage());
             } else if (CollectionUtils.isEmpty(product.getConfigurable_products())) {
                 Product.CurrentSeller currentSeller = product.getCurrent_seller();
-                if (currentSeller == null) {
-                    LOGGER.warn("Product isn't sell any more: {}", product.getName());
-                    continue;
-                }
                 int productId = Integer.parseInt(currentSeller.getProduct_id());
                 long minPrice = getMinPrice(httpClient, product.getPrice(), productId);
                 allListPrice.add(minPrice);
