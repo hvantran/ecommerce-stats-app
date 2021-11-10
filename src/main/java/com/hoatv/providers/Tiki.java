@@ -43,7 +43,7 @@ public class Tiki implements ExternalMetricProvider {
     public static final String APPLICATION_NAME = "Tiki";
     protected static final long PERIOD_TIME_IN_MILLIS = 60000;
 
-    private static final int MAX_RETRY_TIMES = 10;
+    private static final int MAX_RETRY_TIMES = 50;
     private static final String BASE_URL = "https://tiki.vn";
     private static final String API_URL = "https://api.tiki.vn";
 
@@ -91,6 +91,9 @@ public class Tiki implements ExternalMetricProvider {
 
     public void collectPrice(Long productId, EMonitorVO productMonitor) {
         Collection<MetricTag> productPrice = getProductPrice(productId);
+        if (CollectionUtils.isEmpty(productPrice)) {
+            return;
+        }
         if (StringUtils.isNotEmpty(productMonitor.getSubCategory())) {
             productPrice.forEach(metricTag -> metricTag.getAttributes().put("sub_category", productMonitor.getSubCategory()));
         }
@@ -132,13 +135,13 @@ public class Tiki implements ExternalMetricProvider {
 
     private List<Pair<String, Integer>> getProductIdList(Product product) {
         List<Pair<String, Integer>> productIdList = new ArrayList<>();
-        int productId = product.getId();
 
         if (Objects.nonNull(product.getTala_request_id())) {
             LOGGER.error("An exception occurred, the detail error message - {}", product.getError().getMessage());
             return productIdList;
         }
-        productIdList.add(Pair.of(product.getCurrent_seller().getName(), productId));
+        int currentProductId = Integer.parseInt(product.getCurrent_seller().getProduct_id());
+        productIdList.add(Pair.of(product.getCurrent_seller().getName(), currentProductId));
 
         List<Product.OtherSeller> otherSellers = product.getOther_sellers();
         List<Pair<String, Integer>> otherProductIds = otherSellers.stream()

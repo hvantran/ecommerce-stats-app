@@ -6,6 +6,7 @@ import com.hoatv.providers.Tiki;
 import com.hoatv.repositories.ProductRepository;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ProductService {
 
@@ -23,6 +24,12 @@ public class ProductService {
             EMonitorVO monitor = new EMonitorVO(product.getMasterId(), product.getProductName(), product.getSubCategory());
             tiki.addAdditionalProduct(monitor);
         }
+    }
+
+    public List<EMonitorVO> getAllMonitors() {
+        List<Product> products = productRepository.findAll();
+        return products.stream().map(product -> new EMonitorVO(product.getMasterId(), product.getProductName(), product.getSubCategory()))
+                .collect(Collectors.toList());
     }
 
     public void addMonitorProduct(EMonitorVO eMonitorVO) {
