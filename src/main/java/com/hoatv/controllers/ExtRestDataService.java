@@ -114,9 +114,12 @@ public class ExtRestDataService {
                 for (int index = 0; index < runningTimes; index++) {
                     TaskEntry taskEntry = new TaskEntry();
                     taskEntry.setTaskHandler(() -> {
-                        String random = (String) generatorMethod.invoke(SaltGeneratorUtils.class, generatorSaltLength, generatorSaltStartWith);
-                        if (isProcessedBefore(endpointResponseMethod, cachedCodes, random)) {
-                            return null;
+                        String random = "";
+                        if (StringUtils.isNotEmpty(generatorMethodName)) {
+                            random = (String) generatorMethod.invoke(SaltGeneratorUtils.class, generatorSaltLength, generatorSaltStartWith);
+                            if (isProcessedBefore(endpointResponseMethod, cachedCodes, random)) {
+                                return null;
+                            }
                         }
 
                         ExecutionTemplate<String> executionTemplate = getExecutionTemplate(extEndpoint, endpointMethod, httpClientService, data, random);
@@ -130,8 +133,8 @@ public class ExtRestDataService {
                     taskEntry.setName(taskName + " " + index);
                     taskMgmtExecutorV2.execute(taskEntry);
                 }
-                LOGGER.info("{} is completed successfully.", taskName);
             }
+            LOGGER.info("{} is completed successfully.", taskName);
             return null;
         };
     }
