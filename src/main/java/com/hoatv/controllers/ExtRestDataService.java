@@ -5,6 +5,7 @@ import com.hoatv.controllers.MetadataVO.ColumnMetadataVO;
 import com.hoatv.fwk.common.exceptions.AppException;
 import com.hoatv.fwk.common.services.*;
 import com.hoatv.fwk.common.services.GenericHttpClientPool.ExecutionTemplate;
+import com.hoatv.fwk.common.ultilities.ObjectUtils;
 import com.hoatv.models.EndpointResponse;
 import com.hoatv.models.EndpointSetting;
 import com.hoatv.models.SaltGeneratorUtils;
@@ -47,18 +48,18 @@ public class ExtRestDataService {
             List<EndpointSetting> extEndpointSettingRepositoryAll = extEndpointSettingRepository.findAll();
             endpointSettings.addAll(extEndpointSettingRepositoryAll);
         } else {
-            List<EndpointSetting> endpointConfigsByApplication = extEndpointSettingRepository.findEndpointConfigsByApplication(
-                    application);
+            List<EndpointSetting> endpointConfigsByApplication = extEndpointSettingRepository.findEndpointConfigsByApplication(application);
             endpointSettings.addAll(endpointConfigsByApplication);
         }
         return endpointSettings.stream().map(EndpointSetting::toEndpointConfigVO).collect(Collectors.toList());
     }
 
     public void addExtEndpoint(EndpointSettingVO endpointSettingVO) {
-
         EndpointSetting endpointSetting = EndpointSetting.fromEndpointConfigVO(endpointSettingVO);
-        extEndpointSettingRepository.save(endpointSetting);
+        ExtSupportedMethod extSupportedMethod = ExtSupportedMethod.fromString(endpointSetting.getMethod());
+        ObjectUtils.checkThenThrow(Objects::isNull, extSupportedMethod, ExtSupportedMethod.INVALID_SUPPORTED_METHOD);
 
+        extEndpointSettingRepository.save(endpointSetting);
         TaskMgmtService<Object> taskMgmtExecutorV1 = new TaskMgmtService<>(1, 5000);
         TaskEntry mainTaskEntry = new TaskEntry();
         Callable<Object> callable = getEndpointResponseTasks(endpointSetting, endpointSettingVO);
@@ -68,7 +69,6 @@ public class ExtRestDataService {
         taskMgmtExecutorV1.execute(mainTaskEntry);
 
         LOGGER.info("Endpoint {} is added successfully", endpointSetting.getExtEndpoint());
-        extEndpointSettingRepository.save(endpointSetting);
     }
 
     private Callable<Object> getEndpointResponseTasks(EndpointSetting endpointSetting, EndpointSettingVO endpointSettingVO) {
@@ -81,6 +81,7 @@ public class ExtRestDataService {
         // Ext endpoint configuration
         String extEndpoint = endpointSetting.getExtEndpoint();
         String endpointMethod = endpointSetting.getMethod();
+        ExtSupportedMethod extSupportedMethod = ExtSupportedMethod.valueOf(endpointMethod);
         String data = endpointSetting.getData();
 
         // Generator salt
@@ -90,21 +91,17 @@ public class ExtRestDataService {
 
         // Metadata
         String columnMetadata = endpointSetting.getColumnMetadata();
-        CheckedSupplier<MetadataVO> columnMetadataVOSup = () -> objectMapper.readValue(columnMetadata,
-                MetadataVO.class);
+        CheckedSupplier<MetadataVO> columnMetadataVOSup = () -> objectMapper.readValue(columnMetadata, MetadataVO.class);
         MetadataVO metadataVO = columnMetadataVOSup.get();
         String columnId = metadataVO.getColumnId();
         String endpointResponseMethodName = "existsEndpointResponseBy".concat(StringUtils.capitalize(columnId));
-        CheckedSupplier<Method> endpointResponseMethodSup = () -> EndpointResponseRepository.class.getMethod(
-                endpointResponseMethodName, String.class);
+        CheckedSupplier<Method> endpointResponseMethodSup = () -> EndpointResponseRepository.class.getMethod(endpointResponseMethodName, String.class);
         Method endpointResponseMethod = endpointResponseMethodSup.get();
 
         // Success criteria
         String successCriteria = endpointSetting.getSuccessCriteria();
 
         CheckedFunction<String, Method> generatorMethodFunc = getGeneratorMethodFunc(generatorSaltStartWith);
-        Method generatorMethod = Optional.ofNullable(generatorMethodName).map(generatorMethodFunc).get();
-
         final HttpClientService httpClientService = HttpClientService.INSTANCE;
         final GenericHttpClientPool httpClientPool = new GenericHttpClientPool(noParallelThread, 2000);
         final Set<String> cachedCodes = new HashSet<>();
@@ -116,13 +113,14 @@ public class ExtRestDataService {
                     taskEntry.setTaskHandler(() -> {
                         String random = "";
                         if (StringUtils.isNotEmpty(generatorMethodName)) {
+                            Method generatorMethod = generatorMethodFunc.apply(generatorMethodName);
                             random = (String) generatorMethod.invoke(SaltGeneratorUtils.class, generatorSaltLength, generatorSaltStartWith);
                             if (isProcessedBefore(endpointResponseMethod, cachedCodes, random)) {
                                 return null;
                             }
                         }
 
-                        ExecutionTemplate<String> executionTemplate = getExecutionTemplate(extEndpoint, endpointMethod, httpClientService, data, random);
+                        ExecutionTemplate<String> executionTemplate = getExecutionTemplate(extEndpoint, extSupportedMethod, httpClientService, data, random);
                         String responseString = httpClientPool.executeWithTemplate(executionTemplate);
                         if (StringUtils.isNotEmpty(responseString) && responseString.contains(successCriteria)) {
                             onSuccessResponse(endpointSetting, metadataVO, random, responseString);
@@ -160,27 +158,26 @@ public class ExtRestDataService {
             CheckedSupplier<Method> setMethodSup = () -> EndpointResponse.class.getMethod(getMethodName , String.class);
             setMethodSup.get().invoke(endpointResponse, value);
         };
-        columnMetadataVOs.stream().forEach(columnVOConsumer);
+        columnMetadataVOs.forEach(columnVOConsumer);
         endpointResponseRepository.save(endpointResponse);
         LOGGER.warn(random);
     }
 
-    private ExecutionTemplate<String> getExecutionTemplate(String extEndpoint, String endpointMethod,
+    private ExecutionTemplate<String> getExecutionTemplate(String extEndpoint, ExtSupportedMethod endpointMethod,
                                                            HttpClientService httpClientService, String data,
                                                            String random) {
         return httpClient -> {
             switch (endpointMethod) {
-                case "POST":
+                case POST:
                     String fullData = String.format(data, random);
-                    HttpResponse<String> httpResponse = httpClientService.sendPOSTRequest(httpClient, fullData,
-                            extEndpoint);
+                    HttpResponse<String> httpResponse = httpClientService.sendPOSTRequest(httpClient, fullData, extEndpoint);
                     return httpResponse.body();
-                case "GET":
+                case GET:
                     String fullURL = String.format(extEndpoint, random);
                     httpResponse = httpClientService.sendGETRequest(httpClient, fullURL);
                     return httpResponse.body();
                 default:
-                    throw new AppException("Invalid method name. Only support POST/GET");
+                    throw new AppException(ExtSupportedMethod.INVALID_SUPPORTED_METHOD);
             }
         };
     }

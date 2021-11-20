@@ -13,7 +13,7 @@ import java.util.Set;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-@RequiredArgsConstructor
+@Builder
 public class EndpointSetting {
 
     @Id
@@ -21,49 +21,38 @@ public class EndpointSetting {
     private Long id;
 
     @Column
-    @NonNull
     private String application;
 
     @Column
-    @NonNull
     private String taskName;
 
-    @NonNull
     @Column(nullable = false)
     private String extEndpoint;
 
-    @NonNull
     @Column(nullable = false)
     private String method;
 
     @Lob
     @Column
-    @NonNull
     private String data;
 
     @Column
-    @NonNull
     private Integer noParallelThread;
 
     @Lob
-    @NonNull
     @Column(nullable = false)
     private String columnMetadata;
 
     @Column
-    @NonNull
     private String generatorMethodName;
 
     @Column
-    @NonNull
     private Integer generatorSaltLength;
 
     @Column
-    @NonNull
     private String generatorSaltStartWith;
 
     @Column
-    @NonNull
     private String successCriteria;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "endpointSetting")
@@ -76,11 +65,19 @@ public class EndpointSetting {
     }
 
     public static EndpointSetting fromEndpointConfigVO(EndpointSettingVO endpointSettingVO) {
-        return new EndpointSetting(endpointSettingVO.getApplication(), endpointSettingVO.getTaskName(),
-                endpointSettingVO.getExtEndpoint(), endpointSettingVO.getMethod(), endpointSettingVO.getData(),
-                endpointSettingVO.getNoParallelThread(), endpointSettingVO.getColumnMetadata(),
-                endpointSettingVO.getGeneratorMethodName(), endpointSettingVO.getGeneratorSaltLength(),
-                endpointSettingVO.getGeneratorSaltStartWith(), endpointSettingVO.getSuccessCriteria());
+        return EndpointSetting.builder()
+                .application(endpointSettingVO.getApplication())
+                .taskName(endpointSettingVO.getTaskName())
+                .extEndpoint(endpointSettingVO.getExtEndpoint())
+                .method(endpointSettingVO.getMethod())
+                .data(endpointSettingVO.getData())
+                .noParallelThread(endpointSettingVO.getNoParallelThread())
+                .columnMetadata(endpointSettingVO.getColumnMetadata())
+                .generatorMethodName(endpointSettingVO.getGeneratorMethodName())
+                .generatorSaltLength(endpointSettingVO.getGeneratorSaltLength())
+                .generatorSaltStartWith(endpointSettingVO.getGeneratorSaltStartWith())
+                .successCriteria(endpointSettingVO.getSuccessCriteria())
+                .build();
     }
 }
 
