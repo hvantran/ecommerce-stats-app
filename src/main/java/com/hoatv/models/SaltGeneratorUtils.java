@@ -5,6 +5,7 @@ import java.util.Random;
 public class SaltGeneratorUtils {
     private static final String SALT_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890";
     private static final String SALT_NUMS = "1234567890";
+    private static final Random rnd = new Random();
 
     private SaltGeneratorUtils() {
     }
@@ -30,9 +31,8 @@ public class SaltGeneratorUtils {
     }
 
     private static String getSalt(int length, StringBuilder salt, String saltNums) {
-        Random rnd = new Random();
         while (salt.length() < length) {
-            int index = (int) (rnd.nextInt() * saltNums.length());
+            int index = rnd.nextInt(saltNums.length());
             salt.append(saltNums.charAt(index));
         }
         return salt.toString();
