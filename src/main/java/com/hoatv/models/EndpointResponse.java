@@ -11,10 +11,11 @@ import javax.persistence.*;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(indexes = @Index(columnList = "column1"))
 public class EndpointResponse {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
     @ManyToOne
@@ -37,9 +38,9 @@ public class EndpointResponse {
     private String column7;
     @Column
     private String column8;
-    @Column
+    @Column(length = 1024)
     private String column9;
-    @Column
+    @Column(length = 1024)
     private String column10;
 
     public EndpointResponseVO toEndpointResponseVO() {

@@ -13,6 +13,7 @@ import java.util.List;
 public interface EndpointResponseRepository extends JpaRepository<EndpointResponse, Long> {
 
     List<EndpointResponse> findEndpointResponsesByEndpointSettingIn(List<EndpointSetting> endpointConfigSettings);
+    List<EndpointResponse> findEndpointResponsesByColumn3IsNotNullAndColumn10IsNull();
 
     boolean existsEndpointResponseByColumn1(String columnValue);
 

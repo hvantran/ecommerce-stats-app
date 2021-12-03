@@ -25,5 +25,7 @@ public class MetadataVO {
         private String fieldPath;
 
         private String mappingColumnName;
+
+        private String decryptFunctionName;
     }
 }
