@@ -37,6 +37,9 @@ public class EndpointSetting {
     private String data;
 
     @Column
+    private Integer noAttemptTimes;
+
+    @Column
     private Integer noParallelThread;
 
     @Lob
@@ -55,13 +58,29 @@ public class EndpointSetting {
     @Column
     private String successCriteria;
 
+    @OneToOne
+    @ToString.Exclude
+    private EndpointExecutionResult executionResult;
+
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "endpointSetting")
     @ToString.Exclude
     private Set<EndpointResponse> resultSet = new HashSet<>();
 
     public EndpointSettingVO toEndpointConfigVO() {
-        return new EndpointSettingVO(application, taskName, extEndpoint, method, data, noParallelThread, columnMetadata,
-                generatorMethodName, generatorSaltLength, generatorSaltStartWith, successCriteria);
+        return EndpointSettingVO.builder()
+                .application(application)
+                .taskName(taskName)
+                .extEndpoint(extEndpoint)
+                .method(method)
+                .data(data)
+                .noAttemptTimes(noAttemptTimes)
+                .noParallelThread(noParallelThread)
+                .columnMetadata(columnMetadata)
+                .generatorMethodName(generatorMethodName)
+                .generatorSaltLength(generatorSaltLength)
+                .generatorSaltStartWith(generatorSaltStartWith)
+                .successCriteria(successCriteria)
+                .build();
     }
 
     public static EndpointSetting fromEndpointConfigVO(EndpointSettingVO endpointSettingVO) {
@@ -71,6 +90,7 @@ public class EndpointSetting {
                 .extEndpoint(endpointSettingVO.getExtEndpoint())
                 .method(endpointSettingVO.getMethod())
                 .data(endpointSettingVO.getData())
+                .noAttemptTimes(endpointSettingVO.getNoAttemptTimes())
                 .noParallelThread(endpointSettingVO.getNoParallelThread())
                 .columnMetadata(endpointSettingVO.getColumnMetadata())
                 .generatorMethodName(endpointSettingVO.getGeneratorMethodName())

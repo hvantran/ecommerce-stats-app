@@ -10,7 +10,7 @@ import java.util.List;
 
 @Repository
 @Transactional
-public interface EndpointResponseRepository extends JpaRepository<EndpointResponse, Long> {
+public interface ExtEndpointResponseRepository extends JpaRepository<EndpointResponse, Long> {
 
     List<EndpointResponse> findEndpointResponsesByEndpointSettingIn(List<EndpointSetting> endpointConfigSettings);
     List<EndpointResponse> findEndpointResponsesByColumn3IsNotNullAndColumn10IsNull();

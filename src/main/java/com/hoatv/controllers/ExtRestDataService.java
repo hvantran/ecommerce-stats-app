@@ -6,10 +6,7 @@ import com.hoatv.fwk.common.exceptions.AppException;
 import com.hoatv.fwk.common.services.*;
 import com.hoatv.fwk.common.services.GenericHttpClientPool.ExecutionTemplate;
 import com.hoatv.fwk.common.ultilities.ObjectUtils;
-import com.hoatv.models.DecryptUtils;
-import com.hoatv.models.EndpointResponse;
-import com.hoatv.models.EndpointSetting;
-import com.hoatv.models.SaltGeneratorUtils;
+import com.hoatv.models.*;
 import com.hoatv.task.mgmt.entities.TaskEntry;
 import com.hoatv.task.mgmt.services.TaskMgmtService;
 import com.jayway.jsonpath.Configuration;
@@ -20,10 +17,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import javax.transaction.Transactional;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.http.HttpResponse;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.stream.Collectors;
@@ -35,13 +32,16 @@ public class ExtRestDataService {
     public static final HttpClientService HTTP_CLIENT_SERVICE = HttpClientService.INSTANCE;
 
     private final ExtEndpointSettingRepository extEndpointSettingRepository;
-    private final EndpointResponseRepository endpointResponseRepository;
+    private final ExtEndpointResponseRepository endpointResponseRepository;
+    private final ExtExecutionResultRepository extExecutionResultRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ExtRestDataService(ExtEndpointSettingRepository extEndpointSettingRepository,
-                              EndpointResponseRepository endpointResponseRepository) {
+                              ExtEndpointResponseRepository endpointResponseRepository,
+                              ExtExecutionResultRepository extExecutionResultRepository) {
         this.extEndpointSettingRepository = extEndpointSettingRepository;
         this.endpointResponseRepository = endpointResponseRepository;
+        this.extExecutionResultRepository = extExecutionResultRepository;
     }
 
     public List<EndpointSettingVO> getAllExtEndpoints(String application) {
@@ -78,7 +78,7 @@ public class ExtRestDataService {
         // Job configuration
         String application = endpointSetting.getApplication();
         String taskName = endpointSetting.getTaskName();
-        Integer runningTimes = endpointSettingVO.getRunningTimes();
+        Integer runningTimes = endpointSettingVO.getNoAttemptTimes();
         int noParallelThread = endpointSetting.getNoParallelThread();
 
         // Ext endpoint configuration
@@ -102,6 +102,9 @@ public class ExtRestDataService {
 
         CheckedFunction<String, Method> generatorMethodFunc = getGeneratorMethodFunc(generatorSaltStartWith);
 
+        EndpointExecutionResult executionResult = new EndpointExecutionResult();
+        executionResult.setEndpointSetting(endpointSetting);
+        extExecutionResultRepository.save(executionResult);
         return () -> {
             final Set<String> cachedCodes = new HashSet<>();
             try (GenericHttpClientPool httpClientPool = new GenericHttpClientPool(noParallelThread, 2000);
@@ -129,6 +132,8 @@ public class ExtRestDataService {
             } finally {
                 cachedCodes.clear();
             }
+            executionResult.setEndedAt(LocalDateTime.now());
+            extExecutionResultRepository.save(executionResult);
             LOGGER.info("{} is completed successfully.", taskName);
             return null;
         };
@@ -139,7 +144,7 @@ public class ExtRestDataService {
         if (StringUtils.isNotEmpty(generatorMethodName)) {
             String columnId = metadataVO.getColumnId();
             String endpointResponseMethodName = "existsEndpointResponseBy".concat(StringUtils.capitalize(columnId));
-            CheckedSupplier<Method> endpointResponseMethodSup = () -> EndpointResponseRepository.class.getMethod(
+            CheckedSupplier<Method> endpointResponseMethodSup = () -> ExtEndpointResponseRepository.class.getMethod(
                     endpointResponseMethodName, String.class);
             Method endpointResponseMethod = endpointResponseMethodSup.get();
             Method generatorMethod = generatorMethodFunc.apply(generatorMethodName);
@@ -188,11 +193,10 @@ public class ExtRestDataService {
             switch (endpointMethod) {
                 case POST:
                     String fullData = String.format(data, random);
-                    HttpResponse<String> httpResponse = HTTP_CLIENT_SERVICE.sendPOSTRequest(httpClient, fullData, extEndpoint);
-                    return httpResponse.body();
+                    return HTTP_CLIENT_SERVICE.sendPOSTRequest(httpClient, fullData, extEndpoint, String.class);
                 case GET:
                     String fullURL = String.format(extEndpoint, random);
-                    httpResponse = HTTP_CLIENT_SERVICE.sendGETRequest(httpClient, fullURL);
+                    HttpResponse<String> httpResponse = HTTP_CLIENT_SERVICE.sendGETRequest(httpClient, fullURL);
                     return httpResponse.body();
                 default:
                     throw new AppException(ExtSupportedMethod.INVALID_SUPPORTED_METHOD);
@@ -223,7 +227,6 @@ public class ExtRestDataService {
         };
     }
 
-    @Transactional
     public List<EndpointResponseVO> getEndpointResponses(String application) {
         List<EndpointSetting> endpointSettings = extEndpointSettingRepository.findEndpointConfigsByApplication(
                 application);
