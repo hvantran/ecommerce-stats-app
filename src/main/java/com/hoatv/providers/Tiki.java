@@ -63,18 +63,19 @@ public class Tiki implements ExternalMetricProvider {
         this.scheduleTaskExecutorService = scheduleTaskExecutorService;
     }
 
-    private static final BiFunction<Integer, Promotion.Datum, Integer> REDUCE_PRICE_FUNCTION = (price, data) -> {
-        String simpleAction = data.getSimple_action();
+    private BiFunction<Integer, Promotion.Datum, Integer> getDiscountPrice(String category) {
+        return (price, data) -> {
+            if (!category.equals(data.getCoupon_type()) || CollectionUtils.isNotEmpty(data.getTags())) {
+                return 0;
+            }
 
-        if (CollectionUtils.isNotEmpty(data.getTags())) {
-            return price;
-        }
-
-        if (simpleAction.equals(COUPON_BY_PERCENT)) {
-            return price - (price * data.getDiscount_amount() / 100);
-        }
-        return price - data.getDiscount_amount();
-    };
+            String simpleAction = data.getSimple_action();
+            if (simpleAction.equals(COUPON_BY_PERCENT)) {
+                return price * data.getDiscount_amount() / 100;
+            }
+            return data.getDiscount_amount();
+        };
+    }
 
     public void addAdditionalProduct(EMonitorVO product) {
         ScheduleTaskMgmtExecutorV1 scheduleExecutor = scheduleTaskExecutorService.getScheduleExecutor(APPLICATION_NAME);
@@ -218,9 +219,12 @@ public class Tiki implements ExternalMetricProvider {
             return price;
         }
 
-        IntSummaryStatistics intSummaryStatistics = promotion.getData().stream()
-                .map(data -> REDUCE_PRICE_FUNCTION.apply(price, data))
+        IntSummaryStatistics tikiCoupon = promotion.getData().stream()
+                .map(data -> getDiscountPrice("TIKI_COUPON").apply(price, data))
                 .collect(Collectors.summarizingInt(Integer::intValue));
-        return intSummaryStatistics.getMin();
+        IntSummaryStatistics sellerCoupon = promotion.getData().stream()
+                .map(data -> getDiscountPrice("SELLER_COUPON").apply(price, data))
+                .collect(Collectors.summarizingInt(Integer::intValue));
+        return price - tikiCoupon.getMax() - sellerCoupon.getMax();
     }
 }
