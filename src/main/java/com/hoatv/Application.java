@@ -1,16 +1,16 @@
 package com.hoatv;
 
 import com.hoatv.fwk.common.ultilities.ObjectUtils;
-import com.hoatv.metric.common.providers.MetricProviderRegistry;
 import com.hoatv.metric.mgmt.annotations.MetricProvider;
 import com.hoatv.metric.mgmt.annotations.MetricRegistry;
+import com.hoatv.metric.mgmt.services.MetricProviderRegistry;
 import com.hoatv.providers.Tiki;
 import com.hoatv.repositories.ProductRepository;
 import com.hoatv.services.ProductService;
 import com.hoatv.task.mgmt.annotations.SchedulePoolSettings;
 import com.hoatv.task.mgmt.entities.TaskCollection;
-import com.hoatv.task.schedule.executors.ScheduleTaskExecutorService;
-import com.hoatv.task.schedule.executors.ScheduleTaskMgmtExecutorV1;
+import com.hoatv.task.mgmt.services.ScheduleTaskMgmtService;
+import com.hoatv.task.mgmt.services.ScheduleTaskRegistryService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -22,6 +22,7 @@ import springfox.documentation.spi.DocumentationType;
 import springfox.documentation.spring.web.plugins.Docket;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -42,8 +43,8 @@ public class Application {
     }
 
     @Bean(destroyMethod = "destroy")
-    public ScheduleTaskExecutorService getScheduleTaskExecutorService() {
-        return new ScheduleTaskExecutorService();
+    public ScheduleTaskRegistryService getScheduleTaskRegistryService() {
+        return new ScheduleTaskRegistryService();
     }
 
     @Bean
@@ -68,15 +69,15 @@ public class Application {
             MetricProviderRegistry metricProviderRegistry = (MetricProviderRegistry) metricRegistry;
             metricProviderRegistry.loadFromObjects(metricProviders);
 
-            ScheduleTaskExecutorService scheduleTaskExecutorService = ctx.getBean(ScheduleTaskExecutorService.class);
+            ScheduleTaskRegistryService scheduleTaskExecutorService = ctx.getBean(ScheduleTaskRegistryService.class);
 
             poolSettings.stream().forEach(applicationObj -> {
                 SchedulePoolSettings schedulePoolSettings = applicationObj.getClass().getAnnotation(SchedulePoolSettings.class);
-                ScheduleTaskMgmtExecutorV1 taskMgmtExecutorV1 = new ScheduleTaskMgmtExecutorV1(schedulePoolSettings);
+                ScheduleTaskMgmtService taskMgmtExecutorV1 = new ScheduleTaskMgmtService(schedulePoolSettings);
 
                 scheduleTaskExecutorService.register(schedulePoolSettings.application(), taskMgmtExecutorV1);
                 TaskCollection taskCollection = TaskCollection.fromObject(applicationObj);
-                taskMgmtExecutorV1.execute(taskCollection);
+                taskMgmtExecutorV1.scheduleTasks(taskCollection, 5, TimeUnit.SECONDS);
             });
 
             ProductService productService = ctx.getBean(ProductService.class);

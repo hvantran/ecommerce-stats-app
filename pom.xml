@@ -34,11 +34,6 @@
         </dependency>
         <dependency>
             <groupId>hoatv</groupId>
-            <artifactId>base-executor</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>hoatv</groupId>
             <artifactId>ext-endpoint-collector</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
