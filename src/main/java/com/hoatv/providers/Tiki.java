@@ -5,6 +5,8 @@ import com.hoatv.fwk.common.services.CheckedSupplier;
 import com.hoatv.fwk.common.services.GenericHttpClientPool;
 import com.hoatv.fwk.common.services.GenericHttpClientPool.ExecutionTemplate;
 import com.hoatv.fwk.common.services.HttpClientService;
+import com.hoatv.fwk.common.services.HttpClientService.RequestParams;
+import com.hoatv.fwk.common.services.HttpClientService.RequestParams.RequestParamsBuilder;
 import com.hoatv.fwk.common.ultilities.ObjectUtils;
 import com.hoatv.fwk.common.ultilities.Pair;
 import com.hoatv.metric.mgmt.annotations.Metric;
@@ -121,7 +123,16 @@ public class Tiki implements ExternalMetricProvider {
         String productDetailURL = BASE_URL.concat(String.format(PRODUCT_DETAIL, masterId));
 
         ExecutionTemplate<Collection<MetricTag>> executionTemplate = httpClient -> {
-            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class, MAX_RETRY_TIMES);
+
+            RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
+                    .url(productDetailURL)
+                    .method(HttpClientService.HttpMethod.GET)
+                    .retryTimes(MAX_RETRY_TIMES)
+                    .httpClient(httpClient);
+
+            Product product = httpClientService.sendHTTPRequest()
+                    .andThen(response -> HttpClientService.asObject(response, Product.class))
+                    .apply(requestParamsBuilder.build());
             if (Objects.isNull(product) || Objects.isNull(product.getCurrent_seller())) {
                 LOGGER.warn("Product isn't sell any more: {}", masterId);
                 return Collections.emptyList();
@@ -161,7 +172,15 @@ public class Tiki implements ExternalMetricProvider {
             Integer sellerProductId = seller.getValue();
 
             String productDetailURL = BASE_URL.concat(String.format(PRODUCT_DETAIL_2, masterId, sellerProductId));
-            Product product = httpClientService.sendGETRequest(httpClient, productDetailURL, Product.class, MAX_RETRY_TIMES);
+
+            RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
+                    .url(productDetailURL)
+                    .method(HttpClientService.HttpMethod.GET)
+                    .retryTimes(MAX_RETRY_TIMES)
+                    .httpClient(httpClient);
+            Product product = httpClientService.sendHTTPRequest()
+                    .andThen(response -> HttpClientService.asObject(response, Product.class))
+                    .apply(requestParamsBuilder.build());
             if (product == null) {
                 LOGGER.warn("Product isn't sell any more: {}", masterId);
                 continue;
@@ -215,7 +234,15 @@ public class Tiki implements ExternalMetricProvider {
 
     private long getMinPrice(HttpClient httpClient, Integer price, int productId) {
         String disCountURL = API_URL.concat(String.format(COUPON_DETAIL, productId));
-        Promotion promotion = httpClientService.sendGETRequest(httpClient, disCountURL, Promotion.class, MAX_RETRY_TIMES);
+
+        RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
+                .url(disCountURL)
+                .method(HttpClientService.HttpMethod.GET)
+                .retryTimes(MAX_RETRY_TIMES)
+                .httpClient(httpClient);
+        Promotion promotion = httpClientService.sendHTTPRequest()
+                .andThen(response -> HttpClientService.asObject(response, Promotion.class))
+                .apply(requestParamsBuilder.build());
         if (CollectionUtils.isEmpty(promotion.getData())) {
             return price;
         }
