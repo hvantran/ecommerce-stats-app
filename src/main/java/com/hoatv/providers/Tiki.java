@@ -20,12 +20,10 @@ import com.hoatv.task.mgmt.annotations.SchedulePoolSettings;
 import com.hoatv.task.mgmt.annotations.ThreadPoolSettings;
 import com.hoatv.task.mgmt.entities.TaskEntry;
 import com.hoatv.task.mgmt.services.ScheduleTaskMgmtService;
-import com.hoatv.task.mgmt.services.ScheduleTaskRegistryService;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.net.http.HttpClient;
@@ -35,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-@Component
 @ScheduleApplication(application = Tiki.APPLICATION_NAME, period = Tiki.PERIOD_TIME_IN_MILLIS)
 @SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = Tiki.MAXIMUM_NUMBER_OF_PRODUCTS))
 @MetricProvider(application = Tiki.APPLICATION_NAME, category = "e-commerce")
@@ -60,11 +57,7 @@ public class Tiki implements ExternalMetricProvider {
     private final HttpClientService httpClientService = HttpClientService.INSTANCE;
     private final GenericHttpClientPool httpClientPool = new GenericHttpClientPool(30, 2000);
     private final Map<Long, EMonitorVO> additionalProductMap = new ConcurrentHashMap<>();
-    private final ScheduleTaskRegistryService scheduleTaskExecutorService;
-
-    public Tiki(ScheduleTaskRegistryService scheduleTaskExecutorService) {
-        this.scheduleTaskExecutorService = scheduleTaskExecutorService;
-    }
+    public ScheduleTaskMgmtService scheduleTaskMgmtService;
 
     private BiFunction<Integer, Promotion.Datum, Integer> getDiscountPrice(String category) {
         return (price, data) -> {
@@ -81,14 +74,11 @@ public class Tiki implements ExternalMetricProvider {
     }
 
     public void addAdditionalProduct(EMonitorVO product) {
-        ScheduleTaskMgmtService scheduleExecutor = scheduleTaskExecutorService.getScheduleTaskMgmtService(APPLICATION_NAME);
-        Objects.requireNonNull(scheduleExecutor);
-
         String taskName = "product-price" + product.getProductName();
         BiCheckedFunction<Object, Method, TaskEntry> taskEntryFunc = TaskEntry.fromMethodWithParams(taskName, -1, -1, product.getMasterId(), product);
         CheckedSupplier<Method> collectPrice = () -> Tiki.class.getMethod("collectPrice", Long.class, EMonitorVO.class);
         TaskEntry taskEntry = taskEntryFunc.apply(this, collectPrice.get());
-        scheduleExecutor.scheduleFixedRateTask(taskEntry, 5, TimeUnit.SECONDS);
+        scheduleTaskMgmtService.scheduleFixedRateTask(taskEntry, 5, TimeUnit.SECONDS);
         EMonitorVO productId = additionalProductMap.putIfAbsent(product.getMasterId(), product);
         ObjectUtils.checkThenThrow(Objects::nonNull, productId, "Product "+ productId + " is already monitor");
     }
