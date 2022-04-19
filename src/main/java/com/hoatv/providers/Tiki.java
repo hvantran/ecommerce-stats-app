@@ -11,7 +11,6 @@ import com.hoatv.fwk.common.ultilities.ObjectUtils;
 import com.hoatv.fwk.common.ultilities.Pair;
 import com.hoatv.metric.mgmt.annotations.Metric;
 import com.hoatv.metric.mgmt.annotations.MetricProvider;
-import com.hoatv.metric.mgmt.api.ExternalMetricProvider;
 import com.hoatv.metric.mgmt.entities.ComplexValue;
 import com.hoatv.metric.mgmt.entities.MetricTag;
 import com.hoatv.metric.mgmt.services.MetricService;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 @ScheduleApplication(application = Tiki.APPLICATION_NAME, period = Tiki.PERIOD_TIME_IN_MILLIS)
 @SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = Tiki.MAXIMUM_NUMBER_OF_PRODUCTS))
 @MetricProvider(application = Tiki.APPLICATION_NAME, category = "e-commerce")
-public class Tiki implements ExternalMetricProvider {
+public class Tiki {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Tiki.class);
 
@@ -94,8 +93,7 @@ public class Tiki implements ExternalMetricProvider {
         metricService.setMetric(productMonitor.getProductName(), productPrice);
     }
 
-    @Override
-    @Metric(name = "External")
+    @Metric(name = "Product Collection")
     public List<ComplexValue> getExternalMetricValues() {
         return additionalProductMap.values().stream().map(eMonitorVO -> {
             ComplexValue metric = metricService.getMetric(eMonitorVO.getProductName());
