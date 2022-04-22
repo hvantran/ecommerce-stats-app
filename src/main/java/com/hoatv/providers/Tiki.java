@@ -112,11 +112,9 @@ public class Tiki {
 
         ExecutionTemplate<Collection<MetricTag>> executionTemplate = httpClient -> {
 
-            RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
-                    .url(productDetailURL)
+            RequestParamsBuilder requestParamsBuilder = RequestParams.builder(productDetailURL, httpClient)
                     .method(HttpClientService.HttpMethod.GET)
-                    .retryTimes(MAX_RETRY_TIMES)
-                    .httpClient(httpClient);
+                    .retryTimes(MAX_RETRY_TIMES);
 
             Product product = httpClientService.sendHTTPRequest()
                     .andThen(response -> HttpClientService.asObject(response, Product.class))
@@ -161,11 +159,9 @@ public class Tiki {
 
             String productDetailURL = BASE_URL.concat(String.format(PRODUCT_DETAIL_2, masterId, sellerProductId));
 
-            RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
-                    .url(productDetailURL)
+            RequestParamsBuilder requestParamsBuilder = RequestParams.builder(productDetailURL, httpClient)
                     .method(HttpClientService.HttpMethod.GET)
-                    .retryTimes(MAX_RETRY_TIMES)
-                    .httpClient(httpClient);
+                    .retryTimes(MAX_RETRY_TIMES);
             Product product = httpClientService.sendHTTPRequest()
                     .andThen(response -> HttpClientService.asObject(response, Product.class))
                     .apply(requestParamsBuilder.build());
@@ -223,11 +219,9 @@ public class Tiki {
     private long getMinPrice(HttpClient httpClient, Integer price, int productId) {
         String disCountURL = API_URL.concat(String.format(COUPON_DETAIL, productId));
 
-        RequestParamsBuilder requestParamsBuilder = RequestParams.builder()
-                .url(disCountURL)
+        RequestParamsBuilder requestParamsBuilder = RequestParams.builder(disCountURL, httpClient)
                 .method(HttpClientService.HttpMethod.GET)
-                .retryTimes(MAX_RETRY_TIMES)
-                .httpClient(httpClient);
+                .retryTimes(MAX_RETRY_TIMES);
         Promotion promotion = httpClientService.sendHTTPRequest()
                 .andThen(response -> HttpClientService.asObject(response, Promotion.class))
                 .apply(requestParamsBuilder.build());
