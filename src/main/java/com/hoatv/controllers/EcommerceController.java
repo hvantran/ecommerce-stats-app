@@ -18,7 +18,7 @@ public class EcommerceController {
     }
 
     @PostMapping(value = "/statistics", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addMetric(@RequestBody EMonitorVO eMonitorVO) {
+    public void addProductMonitor(@RequestBody EMonitorVO eMonitorVO) {
         productService.addMonitorProduct(eMonitorVO);
     }
 
