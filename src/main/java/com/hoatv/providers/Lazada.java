@@ -17,7 +17,7 @@ import java.util.List;
 
 /*@ScheduleApplication(application = Lazada.APPLICATION_NAME, period = Lazada.PERIOD_TIME_IN_MILLIS)
 @SchedulePoolSettings(application = Lazada.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Lazada.APPLICATION_NAME, numberOfThreads = 30))
-@MetricProvider(application = Lazada.APPLICATION_NAME, category = "e-commerce")*/
+@MetricProvider(application = OTHER_APPLICATION, category = "e-commerce")*/
 public class Lazada {
     private static final Logger LOGGER = LoggerFactory.getLogger(Lazada.class);
 

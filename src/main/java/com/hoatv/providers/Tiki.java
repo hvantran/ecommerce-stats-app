@@ -32,9 +32,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+import static com.hoatv.fwk.common.constants.MetricProviders.OTHER_APPLICATION;
+
 @ScheduleApplication(application = Tiki.APPLICATION_NAME, period = Tiki.PERIOD_TIME_IN_MILLIS)
 @SchedulePoolSettings(application = Tiki.APPLICATION_NAME, threadPoolSettings = @ThreadPoolSettings(name = Tiki.APPLICATION_NAME, numberOfThreads = Tiki.MAXIMUM_NUMBER_OF_PRODUCTS))
-@MetricProvider(application = Tiki.APPLICATION_NAME, category = "e-commerce")
+@MetricProvider(application = OTHER_APPLICATION, category = "e-commerce")
 public class Tiki {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Tiki.class);
