@@ -13,4 +13,9 @@ class ApplicationTest {
     void testRunAsExpected() {
         assertThat(1, Matchers.equalTo(1));
     }
+
+    @Test
+    void testRunAsFailed() {
+        assertThat(1, Matchers.equalTo(2));
+    }
 }
