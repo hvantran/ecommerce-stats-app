@@ -1,0 +1,48 @@
+name: project management ci
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  workflow_dispatch:
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.ACCESS_TOKEN }}
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      - uses: ./.github/workflows/actions
+      - name: Run Maven Build Command
+        run: mvn clean install -DskipTests
+      - name: Analyze with sonar cloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          mvn sonar:sonar -Dsonar.projectKey=hvantran_base-platform -f base-platform;
+          mvn sonar:sonar -Dsonar.projectKey=hvantran_parent-pom -f parent-pom;
+          mvn sonar:sonar -Dsonar.projectKey=hvantran_e-commerce -f e-commerce
+        
+  Unit-Tests:
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.ACCESS_TOKEN }}
+      - uses: ./.github/workflows/actions
+      - name: Run Maven Test Command
+        run: mvn test
+      - name: Unit Test Results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Unit-Test-Results
+          path: "**/surefire-reports/*.xml"
+          reporter: java-junit
