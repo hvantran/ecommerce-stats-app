@@ -1,4 +1,4 @@
-package com.hoatv;
+package com.hoatv.ecommerce.statistics;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
