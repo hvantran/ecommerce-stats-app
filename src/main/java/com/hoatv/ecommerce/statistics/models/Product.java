@@ -1,4 +1,4 @@
-package com.hoatv.models;
+package com.hoatv.ecommerce.statistics.models;
 
 import lombok.*;
 

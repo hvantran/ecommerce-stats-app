@@ -1,4 +1,4 @@
-package com.hoatv.providers;
+package com.hoatv.ecommerce.statistics.providers;
 
 import com.hoatv.fwk.common.services.HtmlDocumentService;
 import com.hoatv.metric.mgmt.annotations.Metric;

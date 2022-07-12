@@ -1,6 +1,6 @@
-package com.hoatv.repositories;
+package com.hoatv.ecommerce.statistics.repositories;
 
-import com.hoatv.models.Product;
+import com.hoatv.ecommerce.statistics.models.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

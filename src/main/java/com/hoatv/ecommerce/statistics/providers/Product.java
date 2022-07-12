@@ -1,4 +1,4 @@
-package com.hoatv.providers;
+package com.hoatv.ecommerce.statistics.providers;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;

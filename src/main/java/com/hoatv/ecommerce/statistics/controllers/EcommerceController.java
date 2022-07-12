@@ -1,7 +1,7 @@
-package com.hoatv.controllers;
+package com.hoatv.ecommerce.statistics.controllers;
 
-import com.hoatv.providers.EMonitorVO;
-import com.hoatv.services.ProductService;
+import com.hoatv.ecommerce.statistics.providers.EMonitorVO;
+import com.hoatv.ecommerce.statistics.services.ProductService;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 

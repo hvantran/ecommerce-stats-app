@@ -1,4 +1,4 @@
-package com.hoatv.providers;
+package com.hoatv.ecommerce.statistics.providers;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

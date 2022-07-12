@@ -1,9 +1,9 @@
-package com.hoatv.services;
+package com.hoatv.ecommerce.statistics.services;
 
-import com.hoatv.models.Product;
-import com.hoatv.providers.EMonitorVO;
-import com.hoatv.providers.Tiki;
-import com.hoatv.repositories.ProductRepository;
+import com.hoatv.ecommerce.statistics.models.Product;
+import com.hoatv.ecommerce.statistics.providers.EMonitorVO;
+import com.hoatv.ecommerce.statistics.providers.Tiki;
+import com.hoatv.ecommerce.statistics.repositories.ProductRepository;
 
 import java.util.List;
 import java.util.stream.Collectors;
