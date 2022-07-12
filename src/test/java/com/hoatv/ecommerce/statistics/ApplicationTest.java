@@ -6,7 +6,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@SpringBootTest
+@SpringBootTest(classes=EcommerceStatisticsApplication.class)
 class ApplicationTest {
 
     @Test
