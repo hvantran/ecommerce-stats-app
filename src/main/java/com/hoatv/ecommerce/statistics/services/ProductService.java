@@ -4,6 +4,7 @@ import com.hoatv.ecommerce.statistics.models.Product;
 import com.hoatv.ecommerce.statistics.providers.EMonitorVO;
 import com.hoatv.ecommerce.statistics.providers.Tiki;
 import com.hoatv.ecommerce.statistics.repositories.ProductRepository;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,8 +27,8 @@ public class ProductService {
         }
     }
 
-    public List<EMonitorVO> getAllMonitors() {
-        List<Product> products = productRepository.findAll();
+    public List<EMonitorVO> getAllMonitors(Pageable pageable) {
+        List<Product> products = productRepository.findAll(pageable).toList();
         return products.stream().map(product -> new EMonitorVO(product.getMasterId(), product.getProductName(), product.getSubCategory()))
                 .collect(Collectors.toList());
     }
