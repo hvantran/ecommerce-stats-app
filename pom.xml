@@ -10,6 +10,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>e-commerce</artifactId>
+    <name>microservices/${project.artifactId}-statistics</name>
     <description>
         Collecting the product data from E-commerce sites (Tiki, Lazada, etc...)
         Saving the product monitor list in database to reuse for next running times.
