@@ -6,6 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -19,7 +20,7 @@ public class EcommerceController {
     }
 
     @PostMapping(value = "/statistics", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void addProductMonitor(@RequestBody EMonitorVO eMonitorVO) {
+    public void addProductMonitor(@Valid @RequestBody EMonitorVO eMonitorVO) {
         productService.addMonitorProduct(eMonitorVO);
     }
 
