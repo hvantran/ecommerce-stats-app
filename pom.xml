@@ -35,11 +35,6 @@
         </dependency>
         <dependency>
             <groupId>hoatv</groupId>
-            <artifactId>ext-endpoint-collector</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>hoatv</groupId>
             <artifactId>springboot-common-app</artifactId>
             <version>${project.version}</version>
         </dependency>
