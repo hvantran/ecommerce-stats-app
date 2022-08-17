@@ -9,7 +9,7 @@
         <relativePath>../parent-pom/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>e-commerce</artifactId>
+    <artifactId>e-commerce-stats</artifactId>
     <name>microservices/${project.artifactId}-statistics</name>
     <description>
         Collecting the product data from E-commerce sites (Tiki, Lazada, etc...)
