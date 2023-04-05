@@ -18,11 +18,16 @@
     </description>
 
     <properties>
-        <application.startup.class>com.hoatv.ecommerce.statistics.EcommerceStatisticsApplication</application.startup.class>
+        <application.startup.class>com.hoatv.ecommerce.statistics.EcommerceStatisticsApplication
+        </application.startup.class>
     </properties>
 
     <dependencies>
         <!-- Internal dependencies-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
         <dependency>
             <groupId>hoatv</groupId>
             <artifactId>task-management</artifactId>
@@ -44,6 +49,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
