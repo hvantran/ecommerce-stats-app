@@ -2,11 +2,11 @@ package com.hoatv.ecommerce.statistics.controllers;
 
 import com.hoatv.ecommerce.statistics.providers.EMonitorVO;
 import com.hoatv.ecommerce.statistics.services.ProductService;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
