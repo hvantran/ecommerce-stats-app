@@ -1,4 +1,4 @@
-name: Send submodule updates to parent repo
+name: send-submodule-updates-to-parent-repo-ci
 
 on:
   push:
