@@ -28,6 +28,21 @@ jobs:
           git add --all
           git commit -m "Update ecommerce-stats-app submodules" || echo "No changes to commit"
           git push
+      - name: Git pull rebase and push
+        if: failure()
+        run: |
+          git pull --rebase
+          git push
+      - name: Git pull rebase and push 2
+        if: failure()
+        run: |
+          git pull --rebase
+          git push
+      - name: Git pull rebase and push 3
+        if: failure()
+        run: |
+          git pull --rebase
+          git push
       - name: Github REST API Call to make ecommerce-stats-app-ci service build
         env:
           CI_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -36,3 +51,4 @@ jobs:
           WORKFLOW_ID: ecommerce-stats-app-ci.yaml
         run: |
           curl -fL --retry 3 -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: token ${{ env.CI_TOKEN }}" https://api.github.com/repos/hvantran/${{ env.PARENT_REPO }}/actions/workflows/${{ env.WORKFLOW_ID }}/dispatches -d '{"ref":"${{ env.PARENT_BRANCH }}"}'
+
