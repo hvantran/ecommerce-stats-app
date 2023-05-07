@@ -1,3 +1,4 @@
+
 name: send-submodule-updates-to-parent-repo-ci
 
 on:
@@ -27,22 +28,11 @@ jobs:
           git config user.name "GitHub Actions - update ecommerce-stats-app submodule"
           git add --all
           git commit -m "Update ecommerce-stats-app submodules" || echo "No changes to commit"
-          git push
-      - name: Git pull rebase and push
-        if: failure()
-        run: |
-          git pull --rebase
-          git push
-      - name: Git pull rebase and push 2
-        if: failure()
-        run: |
-          git pull --rebase
-          git push
-      - name: Git pull rebase and push 3
-        if: failure()
-        run: |
-          git pull --rebase
-          git push
+      - uses: nick-fields/retry@v2
+        with:
+          timeout_seconds: 15
+          max_attempts: 5
+          command: git pull --rebase && git push
       - name: Github REST API Call to make ecommerce-stats-app-ci service build
         env:
           CI_TOKEN: ${{ secrets.ACCESS_TOKEN }}
