@@ -42,6 +42,12 @@
             <groupId>hoatv</groupId>
             <artifactId>springboot-common-app</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 
