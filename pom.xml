@@ -111,7 +111,17 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>*.jar</exclude>
+                </excludes>
                 <filtering>true</filtering>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>*.jar</include>
+                </includes>
+                <targetPath>${project.build.directory}</targetPath>
             </resource>
             <resource>
                 <directory>src/main/docker</directory>

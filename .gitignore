@@ -4,17 +4,19 @@
 # Log file
 *.log
 
-**/*.iml
-**/target/**
-
 # BlueJ files
 *.ctxt
+
+**/*.iml
+**/target/**
+**/node_modules/**
+**/build/**
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
 # Package Files #
-*.jar
+**/target/*.jar
 *.war
 *.nar
 *.ear
