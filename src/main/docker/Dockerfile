@@ -10,5 +10,5 @@ COPY --from=builder application/dependencies/ ./
 COPY --from=builder application/spring-boot-loader ./
 COPY --from=builder application/snapshot-dependencies/ ./
 COPY --from=builder application/application/ ./
-COPY elastic-apm-agent-1.44.0.jar elastic-apm-agent-1.44.0.jar
+COPY elastic-apm-agent-${apm.agent.version}.jar elastic-apm-agent-${apm.agent.version}.jar
 CMD ["java", "-javaagent:elastic-apm-agent-${apm.agent.version}.jar","org.springframework.boot.loader.launch.JarLauncher"]
