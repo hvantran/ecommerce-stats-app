@@ -4,11 +4,7 @@ WORKDIR application
 COPY ${project.build.finalName}.jar ${project.build.finalName}.jar
 RUN java -Djarmode=layertools -jar ${project.build.finalName}.jar extract
 
-FROM openjdk:21-jdk-oracle as runtime
+FROM tranvanhoa2810/base-image:latest as runtime
 # Second stage : Copy the extracted layers
-COPY --from=builder application/dependencies/ ./
-COPY --from=builder application/spring-boot-loader ./
-COPY --from=builder application/snapshot-dependencies/ ./
 COPY --from=builder application/application/ ./
-COPY elastic-apm-agent-${apm.agent.version}.jar elastic-apm-agent-${apm.agent.version}.jar
 CMD ["java", "-javaagent:elastic-apm-agent-${apm.agent.version}.jar","org.springframework.boot.loader.launch.JarLauncher"]
