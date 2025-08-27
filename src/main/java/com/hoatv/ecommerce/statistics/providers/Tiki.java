@@ -90,7 +90,7 @@ public class Tiki {
             return;
         }
         if (StringUtils.isNotEmpty(productMonitor.getSubCategory())) {
-            productPrice.forEach(metricTag -> metricTag.getAttributes().put("sub_category", productMonitor.getSubCategory()));
+            productPrice.forEach(metricTag -> metricTag.add("sub_category", productMonitor.getSubCategory()));
         }
         metricService.setMetric(productMonitor.getProductName(), productPrice);
     }
@@ -103,7 +103,7 @@ public class Tiki {
                 return null;
             }
 
-            metric.getTags().forEach(tag -> tag.getAttributes().putIfAbsent("name", eMonitorVO.getProductName()));
+            metric.getTags().forEach(tag -> tag.add("name", eMonitorVO.getProductName()));
             return metric;
         }).filter(Objects::nonNull)
         .collect(Collectors.toList());
@@ -185,22 +185,22 @@ public class Tiki {
                     long minPrice = getMinPrice(httpClient, configurableProduct.getPrice(), configurableProduct.getId());
                     MetricTag metricTag = new MetricTag(String.valueOf(minPrice));
                     if (StringUtils.isNotEmpty(configurableProduct.getOption1())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option1, configurableProduct.getOption1());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option1, configurableProduct.getOption1());
                     }
                     if (StringUtils.isNotEmpty(configurableProduct.getOption2())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option2, configurableProduct.getOption2());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option2, configurableProduct.getOption2());
                     }
                     if (StringUtils.isNotEmpty(configurableProduct.getOption3())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option3, configurableProduct.getOption3());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option3, configurableProduct.getOption3());
                     }
                     if (StringUtils.isNotEmpty(configurableProduct.getOption4())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option4, configurableProduct.getOption4());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option4, configurableProduct.getOption4());
                     }
                     if (StringUtils.isNotEmpty(configurableProduct.getOption5())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option5, configurableProduct.getOption5());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option5, configurableProduct.getOption5());
                     }
                     if (StringUtils.isNotEmpty(configurableProduct.getOption4())) {
-                        metricTag.getAttributes().put(Product.ConfigurableProduct.Fields.option6, configurableProduct.getOption6());
+                        metricTag.add(Product.ConfigurableProduct.Fields.option6, configurableProduct.getOption6());
                     }
                     allMetricTagList.add(metricTag);
                 }
